@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dpentx</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #2d353b;
+            --bg-dark: #232a2e;
+            --bg-light: #343f44;
+            --text: #d3c6aa;
+            --text-dim: #859289;
+            --green: #a7c080;
+            --blue: #7fbbb3;
+            --red: #e67e80;
+            --yellow: #dbbc7f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(167, 192, 128, 0.2);
+        }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            border: 2px solid var(--green);
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: var(--green);
+            margin-bottom: 0.5rem;
+        }
+
+        .bio {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        nav {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-light);
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .nav-btn:hover {
+            color: var(--green);
+            background: var(--bg-dark);
+        }
+
+        .nav-btn.active {
+            color: var(--bg-dark);
+            background: var(--green);
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: var(--bg-light);
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--green);
+        }
+
+        .stat-label {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .file-list {
+            list-style: none;
+        }
+
+        .file-item, .folder-item {
+            padding: 0.75rem 1rem;
+            background: var(--bg-light);
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .file-item:hover, .folder-item:hover {
+            background: var(--bg-dark);
+            color: var(--green);
+        }
+
+        .folder-item {
+            border-left: 3px solid var(--blue);
+        }
+
+        .file-item {
+            border-left: 3px solid var(--yellow);
+        }
+
+        .breadcrumb {
+            margin-bottom: 1rem;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .breadcrumb a {
+            color: var(--green);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .project-card {
+            background: var(--bg-light);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 3px solid var(--green);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .project-card:hover {
+            background: var(--bg-dark);
+            border-left-color: var(--blue);
+        }
+
+        .project-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        .project-desc {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .project-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .contact-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .contact-link {
+            padding: 1.5rem;
+            background: var(--bg-light);
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text);
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 0.75rem;
+            border: 2px solid transparent;
+        }
+
+        .contact-link:hover {
+            background: var(--bg-dark);
+            border-color: var(--green);
+            transform: translateY(-4px);
+        }
+
+        .contact-link i {
+            font-size: 2.5rem;
+            color: var(--green);
+        }
+
+        .contact-link .contact-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .contact-link .contact-desc {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(35, 42, 46, 0.95);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        .modal-content {
+            max-width: 800px;
+            margin: 2rem auto;
+            background: var(--bg);
+            padding: 2rem;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--red);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .modal-close:hover {
+            transform: scale(1.1);
+        }
+
+        .markdown-content {
+            color: var(--text);
+        }
+
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            color: var(--green);
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown-content code {
+            background: var(--bg-dark);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            color: var(--yellow);
+        }
+
+        .markdown-content pre {
+            background: var(--bg-dark);
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .markdown-content a {
+            color: var(--blue);
+            text-decoration: underline;
+        }
+
+        .markdown-content a:hover {
+            color: var(--green);
+        }
+
+        .lang-switcher {
+            position: fixed;
+            top: 0;
+            right: 0;
+            display: flex;
+            gap: 0.5rem;
+            z-index: 100;
+            padding: 0.75rem;
+        }
+
+        .lang-btn {
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-light);
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .lang-btn:hover {
+            color: var(--green);
+            transform: translateY(-2px);
+        }
+
+        .lang-btn.active {
+            background: var(--green);
+            color: var(--bg-dark);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dim);
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 2rem 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .lang-switcher {
+                top: 0;
+                right: 0;
+                padding: 0.5rem;
+            }
+
+            .contact-links {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="lang-switcher">
+        <button class="lang-btn active" data-lang="tr">🇹🇷 TR</button>
+        <button class="lang-btn" data-lang="en">🇬🇧 EN</button>
+    </div>
+
+    <div class="container">
+        <header>
+            <img id="avatar" class="avatar" src="" alt="Avatar">
+            <h1 id="username">dpentx</h1>
+            <p class="bio" id="bio-text"></p>
+        </header>
+
+        <nav>
+            <button class="nav-btn active" data-page="home"><i class="fas fa-home"></i> <span data-i18n="nav-home">Anasayfa</span></button>
+            <button class="nav-btn" data-page="blog"><i class="fas fa-folder"></i> <span data-i18n="nav-blog">Blog</span></button>
+            <button class="nav-btn" data-page="projects"><i class="fas fa-code"></i> <span data-i18n="nav-projects">Projeler</span></button>
+            <button class="nav-btn" data-page="contact"><i class="fas fa-envelope"></i> <span data-i18n="nav-contact">İletişim</span></button>
+        </nav>
+
+        <section id="home" class="section active">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="blog-count">0</div>
+                    <div class="stat-label" data-i18n="stat-blogs">Blog Yazıları</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="repo-count">0</div>
+                    <div class="stat-label" data-i18n="stat-repos">Repolar</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stars-count">0</div>
+                    <div class="stat-label" data-i18n="stat-stars">Yıldızlar</div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 2rem;">
+                <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 0.5rem;">🌲 Visitor Counter 🌲</p>
+                <img src="https://count.getloli.com/@dpentx?name=everforest&theme=rule34&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=1" alt="visitor count">
+            </div>
+        </section>
+
+        <section id="blog" class="section">
+            <div id="blog-breadcrumb" class="breadcrumb"></div>
+            <div id="blog-loading" class="loading"><i class="fas fa-spinner fa-spin"></i> <span data-i18n="loading">Yükleniyor...</span></div>
+            <ul id="blog-list" class="file-list"></ul>
+        </section>
+
+        <section id="projects" class="section">
+            <div id="projects-loading" class="loading"><i class="fas fa-spinner fa-spin"></i> <span data-i18n="loading">Yükleniyor...</span></div>
+            <div id="projects-list"></div>
+        </section>
+
+        <section id="contact" class="section">
+            <h2 style="text-align: center; color: var(--green); margin-bottom: 1rem; font-size: 1.5rem;" data-i18n="contact-title">İletişim</h2>
+            <p style="text-align: center; color: var(--text-dim); margin-bottom: 2rem;" data-i18n="contact-subtitle">Benimle iletişime geçmek için aşağıdaki platformları kullanabilirsiniz</p>
+            
+            <div class="contact-links">
+                <a href="https://github.com/dpentx" target="_blank" class="contact-link">
+                    <i class="fab fa-github"></i>
+                    <div class="contact-title">GitHub</div>
+                    <div class="contact-desc" data-i18n="contact-github-desc">Açık kaynak projelerim ve katkılarım</div>
+                </a>
+                <a href="https://myanimelist.net/profile/dpenx" target="_blank" class="contact-link">
+                    <i class="fas fa-book"></i>
+                    <div class="contact-title">MyAnimeList</div>
+                    <div class="contact-desc" data-i18n="contact-mal-desc">Anime izleme listem ve değerlendirmelerim</div>
+                </a>
+                <a href="https://www.instagram.com/dpenx_?igsh=MXZpaDdjbzJjN29sMQ==" target="_blank" class="contact-link">
+                    <i class="fab fa-instagram"></i>
+                    <div class="contact-title">Instagram</div>
+                    <div class="contact-desc" data-i18n="contact-instagram-desc">Günlük paylaşımlar ve sohbet</div>
+                </a>
+            </div>
+
+            <div style="margin-top: 2rem; padding: 1.5rem; background: var(--bg-light); border-radius: 8px; border-left: 3px solid var(--green);">
+                <p style="color: var(--text); margin-bottom: 0.5rem;"><i class="fas fa-handshake" style="color: var(--green);"></i> <strong data-i18n="contact-note-title">Açık kaynak katkıları</strong></p>
+                <p style="color: var(--text-dim); font-size: 0.9rem;" data-i18n="contact-note-text">Açık kaynak projelere katkı yapmaktan ve işbirliği yapmaktan mutluluk duyuyorum. GitHub üzerinden benimle iletişime geçebilir, projelerime katkı sağlayabilirsiniz.</p>
+            </div>
+        </section>
+    </div>
+
+    <div id="blog-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+            <div id="modal-content" class="markdown-content"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <script>
+        const githubUsername = "dpentx";
+        const githubUsername2 = "dtxapplist";
+        const repoName = "dpentx.github.io";
+
+        let currentPath = [];
+        let currentLang = localStorage.getItem('preferredLanguage') || 'tr';
+
+        const translations = {
+            tr: {
+                "nav-home": "Anasayfa",
+                "nav-blog": "Blog",
+                "nav-projects": "Projeler",
+                "nav-contact": "İletişim",
+                "stat-blogs": "Blog Yazıları",
+                "stat-repos": "Repolar",
+                "stat-stars": "Yıldızlar",
+                "loading": "Yükleniyor...",
+                "no-content": "İçerik bulunamadı",
+                "error": "Bir hata oluştu",
+                "bio-text": "NixOS ile ilgilenen ve çeviri yapan biriyim. Açık kaynak projelere katkı sağlamayı ve teknolojinin insanlara fayda sağlayacak şekilde kullanılmasını destekliyorum.",
+                "contact-title": "İletişim",
+                "contact-subtitle": "Benimle iletişime geçmek için aşağıdaki platformları kullanabilirsiniz",
+                "contact-github-desc": "Açık kaynak projelerim ve katkılarım",
+                "contact-mal-desc": "Anime izleme listem ve değerlendirmelerim",
+                "contact-instagram-desc": "Günlük paylaşımlar ve sohbet",
+                "contact-note-title": "Açık kaynak katkıları",
+                "contact-note-text": "Açık kaynak projelere katkı yapmaktan ve işbirliği yapmaktan mutluluk duyuyorum. GitHub üzerinden benimle iletişime geçebilir, projelerime katkı sağlayabilirsiniz."
+            },
+            en: {
+                "nav-home": "Home",
+                "nav-blog": "Blog",
+                "nav-projects": "Projects",
+                "nav-contact": "Contact",
+                "stat-blogs": "Blog Posts",
+                "stat-repos": "Repositories",
+                "stat-stars": "Stars",
+                "loading": "Loading...",
+                "no-content": "No content found",
+                "error": "An error occurred",
+                "bio-text": "I'm interested in NixOS and translation work. I support contributing to open source projects and using technology to benefit people.",
+                "contact-title": "Contact",
+                "contact-subtitle": "You can reach me through the following platforms",
+                "contact-github-desc": "My open source projects and contributions",
+                "contact-mal-desc": "My anime watchlist and reviews",
+                "contact-instagram-desc": "Daily posts and chat",
+                "contact-note-title": "Open source contributions",
+                "contact-note-text": "I'm happy to contribute to open source projects and collaborate. You can contact me via GitHub and contribute to my projects."
+            }
+        };
+
+        function applyTranslations(lang) {
+            currentLang = lang;
+            localStorage.setItem('preferredLanguage', lang);
+            
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    element.textContent = translations[lang][key];
+                }
+            });
+
+            document.getElementById('bio-text').textContent = translations[lang]['bio-text'];
+
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.lang === lang) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => applyTranslations(btn.dataset.lang));
+        });
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.page).classList.add('active');
+
+                if (btn.dataset.page === 'blog') {
+                    currentPath = [];
+                    loadBlogContent();
+                }
+            });
+        });
+
+        async function loadProfile() {
+            try {
+                const response = await fetch(`https://api.github.com/users/${githubUsername}`);
+                const data = await response.json();
+                
+                document.getElementById("username").textContent = data.name || data.login;
+                document.getElementById("avatar").src = data.avatar_url;
+
+                const [repos1, repos2] = await Promise.all([
+                    fetch(`https://api.github.com/users/${githubUsername}/repos?per_page=100`).then(r => r.json()),
+                    fetch(`https://api.github.com/users/${githubUsername2}/repos?per_page=100`).then(r => r.json())
+                ]);
+
+                const allRepos = [...repos1, ...repos2];
+                const totalStars = allRepos.reduce((sum, repo) => sum + repo.stargazers_count, 0);
+
+                document.getElementById("repo-count").textContent = allRepos.length;
+                document.getElementById("stars-count").textContent = totalStars;
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        async function loadBlogContent() {
+            const blogList = document.getElementById('blog-list');
+            const blogLoading = document.getElementById('blog-loading');
+            const breadcrumb = document.getElementById('blog-breadcrumb');
+
+            blogList.innerHTML = '';
+            blogLoading.style.display = 'block';
+
+            const path = currentPath.length > 0 ? currentPath.join('/') : '';
+            const fullPath = path ? `blog/${path}` : 'blog';
+
+            breadcrumb.innerHTML = '<a onclick="navigateTo([])">blog</a>';
+            currentPath.forEach((folder, index) => {
+                const subPath = currentPath.slice(0, index + 1);
+                breadcrumb.innerHTML += ` / <a onclick="navigateTo(${JSON.stringify(subPath).replace(/"/g, '&quot;')})">${folder}</a>`;
+            });
+
+            try {
+                const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repoName}/contents/${fullPath}`);
+                const items = await response.json();
+
+                blogLoading.style.display = 'none';
+
+                const folders = items.filter(item => item.type === 'dir');
+                const files = items.filter(item => item.type === 'file' && item.name.endsWith('.md'));
+
+                folders.forEach(folder => {
+                    const li = document.createElement('li');
+                    li.className = 'folder-item';
+                    li.innerHTML = `<i class="fas fa-folder"></i> ${folder.name}`;
+                    li.onclick = () => navigateToFolder(folder.name);
+                    blogList.appendChild(li);
+                });
+
+                files.forEach(file => {
+                    const li = document.createElement('li');
+                    li.className = 'file-item';
+                    li.innerHTML = `<i class="fas fa-file-alt"></i> ${file.name}`;
+                    li.onclick = () => openMarkdownFile(file.download_url, file.name);
+                    blogList.appendChild(li);
+                });
+
+                document.getElementById("blog-count").textContent = await countAllMarkdownFiles();
+            } catch (error) {
+                blogLoading.innerHTML = `<p style="color: var(--red);">${translations[currentLang]['error']}</p>`;
+            }
+        }
+
+        async function countAllMarkdownFiles() {
+            try {
+                const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repoName}/git/trees/main?recursive=1`);
+                const data = await response.json();
+                return data.tree.filter(item => item.path.startsWith('blog/') && item.path.endsWith('.md')).length;
+            } catch {
+                return 0;
+            }
+        }
+
+        function navigateTo(path) {
+            currentPath = path;
+            loadBlogContent();
+        }
+
+        function navigateToFolder(folderName) {
+            currentPath.push(folderName);
+            loadBlogContent();
+        }
+
+        async function openMarkdownFile(url, filename) {
+            const modal = document.getElementById('blog-modal');
+            const content = document.getElementById('modal-content');
+            
+            modal.classList.add('active');
+            content.innerHTML = `<div class="loading"><i class="fas fa-spinner fa-spin"></i> ${translations[currentLang]['loading']}</div>`;
+
+            try {
+                const response = await fetch(url);
+                const markdown = await response.text();
+                const html = marked.parse(markdown);
+                
+                content.innerHTML = `<h1 style="color: var(--green); margin-bottom: 1rem;">${filename.replace('.md', '')}</h1>${html}`;
+            } catch (error) {
+                content.innerHTML = `<p style="color: var(--red);">${translations[currentLang]['error']}</p>`;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('blog-modal').classList.remove('active');
+        }
+
+        document.getElementById('blog-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'blog-modal') closeModal();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        async function loadProjects() {
+            const projectsList = document.getElementById('projects-list');
+            const projectsLoading = document.getElementById('projects-loading');
+
+            try {
+                const [repos1, repos2] = await Promise.all([
+                    fetch(`https://api.github.com/users/${githubUsername}/repos?sort=updated&per_page=100`).then(r => r.json()),
+                    fetch(`https://api.github.com/users/${githubUsername2}/repos?sort=updated&per_page=100`).then(r => r.json())
+                ]);
+
+                const allRepos = [...repos1, ...repos2]
+                    .filter(repo => !repo.fork)
+                    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+                    .slice(0, 12);
+
+                projectsLoading.style.display = 'none';
+
+                for (const repo of allRepos) {
+                    let description = repo.description;
+                    
+                    // Try to fetch localized description from desc folder
+                    const descFile = currentLang === 'tr' ? 'tr.md' : 'en.md';
+                    const descUrl = `https://raw.githubusercontent.com/${repo.full_name}/main/desc/${descFile}`;
+                    
+                    try {
+                        const descResponse = await fetch(descUrl);
+                        if (descResponse.ok) {
+                            description = await descResponse.text();
+                            // Clean up markdown and trim whitespace
+                            description = description.replace(/[#*`\[\]]/g, '').trim();
+                        }
+                    } catch (e) {
+                        // If desc file not found, use default GitHub description
+                    }
+
+                    if (!description) {
+                        description = translations[currentLang]['no-content'];
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = 'project-card';
+                    card.onclick = () => window.open(repo.html_url, '_blank');
+                    card.innerHTML = `
+                        <div class="project-title"><i class="fas fa-folder-open"></i> ${repo.name}</div>
+                        <div class="project-desc">${description}</div>
+                        <div class="project-meta">
+                            ${repo.language ? `<span><i class="fas fa-code"></i> ${repo.language}</span>` : ''}
+                            <span><i class="fas fa-star"></i> ${repo.stargazers_count}</span>
+                            <span><i class="fas fa-code-fork"></i> ${repo.forks_count}</span>
+                        </div>
+                    `;
+                    projectsList.appendChild(card);
+                }
+            } catch (error) {
+                projectsLoading.innerHTML = `<p style="color: var(--red);">${translations[currentLang]['error']}</p>`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            applyTranslations(currentLang);
+            loadProfile();
+            loadBlogContent();
+            loadProjects();
+        });
+    </script>
+</body>
+                </html>
