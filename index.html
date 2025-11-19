@@ -567,6 +567,12 @@
                 document.getElementById('projects-loading').style.display = 'block';
                 loadProjects();
             }
+            
+            // Reload blog if on blog page
+            const blogSection = document.getElementById('blog');
+            if (blogSection.classList.contains('active')) {
+                loadBlogContent();
+            }
         }
 
         document.querySelectorAll('.lang-btn').forEach(btn => {
@@ -591,15 +597,16 @@
 
         async function loadProfile() {
             try {
-                const response = await fetch(`https://api.github.com/users/${githubUsername}`);
+                const headers = githubToken ? { 'Authorization': `token ${githubToken}` } : {};
+                const response = await fetch(`https://api.github.com/users/${githubUsername}`, { headers });
                 const data = await response.json();
                 
                 document.getElementById("username").textContent = data.name || data.login;
                 document.getElementById("avatar").src = data.avatar_url;
 
                 const [repos1, repos2] = await Promise.all([
-                    fetch(`https://api.github.com/users/${githubUsername}/repos?per_page=100`).then(r => r.json()),
-                    fetch(`https://api.github.com/users/${githubUsername2}/repos?per_page=100`).then(r => r.json())
+                    fetch(`https://api.github.com/users/${githubUsername}/repos?per_page=100`, { headers }).then(r => r.json()),
+                    fetch(`https://api.github.com/users/${githubUsername2}/repos?per_page=100`, { headers }).then(r => r.json())
                 ]);
 
                 const allRepos = [...repos1, ...repos2];
@@ -632,7 +639,12 @@
             });
 
             try {
-                const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repoName}/contents/${fullPath}`);
+                // Use jsDelivr CDN instead of GitHub API (no rate limits!)
+                const cdnUrl = `https://cdn.jsdelivr.net/gh/${githubUsername}/${repoName}@main/${fullPath}/`;
+                
+                // Fetch directory listing via API as fallback
+                const headers = githubToken ? { 'Authorization': `token ${githubToken}` } : {};
+                const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repoName}/contents/${fullPath}`, { headers });
                 const items = await response.json();
 
                 blogLoading.style.display = 'none';
@@ -652,21 +664,26 @@
                     const li = document.createElement('li');
                     li.className = 'file-item';
                     li.innerHTML = `<i class="fas fa-file-alt"></i> ${file.name}`;
-                    li.onclick = () => openMarkdownFile(file.download_url, file.name);
+                    // Use jsDelivr CDN URL for file content
+                    const cdnFileUrl = `https://cdn.jsdelivr.net/gh/${githubUsername}/${repoName}@main/${fullPath}/${file.name}`;
+                    li.onclick = () => openMarkdownFile(cdnFileUrl, file.name);
                     blogList.appendChild(li);
                 });
 
                 document.getElementById("blog-count").textContent = await countAllMarkdownFiles();
             } catch (error) {
+                console.error('Blog loading error:', error);
                 blogLoading.innerHTML = `<p style="color: var(--red);">${translations[currentLang]['error']}</p>`;
             }
         }
 
         async function countAllMarkdownFiles() {
             try {
-                const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repoName}/git/trees/main?recursive=1`);
+                const headers = githubToken ? { 'Authorization': `token ${githubToken}` } : {};
+                const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repoName}/git/trees/main?recursive=1`, { headers });
                 const data = await response.json();
-                return data.tree.filter(item => item.path.startsWith('blog/') && item.path.endsWith('.md')).length;
+                const langFolder = currentLang === 'tr' ? 'tr' : 'en';
+                return data.tree.filter(item => item.path.startsWith(`blog/${langFolder}/`) && item.path.endsWith('.md')).length;
             } catch {
                 return 0;
             }
@@ -674,19 +691,22 @@
 
         function navigateTo(path) {
             currentPath = path;
-            const hashPath = path.length > 0 ? `blog/${path.join('/')}` : 'blog';
+            const langFolder = currentLang === 'tr' ? 'tr' : 'en';
+            const hashPath = path.length > 0 ? `blog/${langFolder}/${path.join('/')}` : `blog/${langFolder}`;
             window.location.hash = hashPath;
             loadBlogContent();
         }
 
         function navigateToFolder(folderName) {
             currentPath.push(folderName);
-            window.location.hash = `blog/${currentPath.join('/')}`;
+            const langFolder = currentLang === 'tr' ? 'tr' : 'en';
+            window.location.hash = `blog/${langFolder}/${currentPath.join('/')}`;
             loadBlogContent();
         }
 
         async function openMarkdownFile(url, filename) {
-            const fullPath = currentPath.length > 0 ? currentPath.join('/') + '/' + filename : filename;
+            const langFolder = currentLang === 'tr' ? 'tr' : 'en';
+            const fullPath = currentPath.length > 0 ? `${langFolder}/${currentPath.join('/')}/${filename}` : `${langFolder}/${filename}`;
             window.location.hash = `blog/${fullPath}`;
             
             const modal = document.getElementById('blog-modal');
@@ -711,8 +731,9 @@
             document.getElementById('blog-modal').classList.remove('active');
             isReadingBlog = false;
             // Go back to blog list
+            const langFolder = currentLang === 'tr' ? 'tr' : 'en';
             const pathWithoutFile = currentPath.join('/');
-            window.location.hash = pathWithoutFile ? `blog/${pathWithoutFile}` : 'blog';
+            window.location.hash = pathWithoutFile ? `blog/${langFolder}/${pathWithoutFile}` : `blog/${langFolder}`;
         }
 
         document.getElementById('blog-modal').addEventListener('click', (e) => {
@@ -728,9 +749,10 @@
             const projectsLoading = document.getElementById('projects-loading');
 
             try {
+                const headers = githubToken ? { 'Authorization': `token ${githubToken}` } : {};
                 const [repos1, repos2] = await Promise.all([
-                    fetch(`https://api.github.com/users/${githubUsername}/repos?sort=updated&per_page=100`).then(r => r.json()),
-                    fetch(`https://api.github.com/users/${githubUsername2}/repos?sort=updated&per_page=100`).then(r => r.json())
+                    fetch(`https://api.github.com/users/${githubUsername}/repos?sort=updated&per_page=100`, { headers }).then(r => r.json()),
+                    fetch(`https://api.github.com/users/${githubUsername2}/repos?sort=updated&per_page=100`, { headers }).then(r => r.json())
                 ]);
 
                 const allRepos = [...repos1, ...repos2]
