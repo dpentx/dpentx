@@ -1,0 +1,14 @@
+name: Purge CDN Cache
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Purge jsDelivr Cache
+        run: |
+          curl -X POST https://purge.jsdelivr.net/gh/${{ github.repository }}@main/
