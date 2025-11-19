@@ -582,8 +582,9 @@
                 document.getElementById(btn.dataset.page).classList.add('active');
 
                 if (btn.dataset.page === 'blog') {
-                    currentPath = [];
-                    loadBlogContent();
+                    window.location.hash = 'blog';
+                } else {
+                    window.location.hash = btn.dataset.page;
                 }
             });
         });
@@ -619,8 +620,10 @@
             blogList.innerHTML = '';
             blogLoading.style.display = 'block';
 
+            // Use language-specific blog folder
+            const langFolder = currentLang === 'tr' ? 'tr' : 'en';
             const path = currentPath.length > 0 ? currentPath.join('/') : '';
-            const fullPath = path ? `blog/${path}` : 'blog';
+            const fullPath = path ? `blog/${langFolder}/${path}` : `blog/${langFolder}`;
 
             breadcrumb.innerHTML = '<a onclick="navigateTo([])">blog</a>';
             currentPath.forEach((folder, index) => {
@@ -671,19 +674,26 @@
 
         function navigateTo(path) {
             currentPath = path;
+            const hashPath = path.length > 0 ? `blog/${path.join('/')}` : 'blog';
+            window.location.hash = hashPath;
             loadBlogContent();
         }
 
         function navigateToFolder(folderName) {
             currentPath.push(folderName);
+            window.location.hash = `blog/${currentPath.join('/')}`;
             loadBlogContent();
         }
 
         async function openMarkdownFile(url, filename) {
+            const fullPath = currentPath.length > 0 ? currentPath.join('/') + '/' + filename : filename;
+            window.location.hash = `blog/${fullPath}`;
+            
             const modal = document.getElementById('blog-modal');
             const content = document.getElementById('modal-content');
             
             modal.classList.add('active');
+            isReadingBlog = true;
             content.innerHTML = `<div class="loading"><i class="fas fa-spinner fa-spin"></i> ${translations[currentLang]['loading']}</div>`;
 
             try {
@@ -699,6 +709,10 @@
 
         function closeModal() {
             document.getElementById('blog-modal').classList.remove('active');
+            isReadingBlog = false;
+            // Go back to blog list
+            const pathWithoutFile = currentPath.join('/');
+            window.location.hash = pathWithoutFile ? `blog/${pathWithoutFile}` : 'blog';
         }
 
         document.getElementById('blog-modal').addEventListener('click', (e) => {
@@ -706,7 +720,7 @@
         });
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
+            if (e.key === 'Escape' && isReadingBlog) closeModal();
         });
 
         async function loadProjects() {
@@ -785,9 +799,75 @@
         document.addEventListener('DOMContentLoaded', () => {
             applyTranslations(currentLang);
             loadProfile();
-            loadBlogContent();
             loadProjects();
+            
+            // Handle URL hash routing
+            handleRouting();
+            window.addEventListener('hashchange', handleRouting);
         });
+
+        function handleRouting() {
+            const hash = window.location.hash.slice(1); // Remove #
+            
+            if (!hash || hash === 'home') {
+                showSection('home');
+            } else if (hash === 'projects') {
+                showSection('projects');
+            } else if (hash === 'contact') {
+                showSection('contact');
+            } else if (hash.startsWith('blog')) {
+                showSection('blog');
+                const blogPath = hash.replace('blog/', '').replace('blog', '');
+                
+                if (blogPath) {
+                    const parts = blogPath.split('/');
+                    const lastPart = parts[parts.length - 1];
+                    
+                    // Check if it's a markdown file
+                    if (lastPart.endsWith('.md')) {
+                        // Open the blog post
+                        currentPath = parts.slice(0, -1);
+                        loadBlogContent().then(() => {
+                            // Find and open the file
+                            const filename = lastPart;
+                            const fullPath = parts.join('/');
+                            const fileUrl = `https://raw.githubusercontent.com/${githubUsername}/${repoName}/main/blog/${fullPath}`;
+                            
+                            const modal = document.getElementById('blog-modal');
+                            const content = document.getElementById('modal-content');
+                            modal.classList.add('active');
+                            isReadingBlog = true;
+                            content.innerHTML = `<div class="loading"><i class="fas fa-spinner fa-spin"></i> ${translations[currentLang]['loading']}</div>`;
+
+                            fetch(fileUrl)
+                                .then(r => r.text())
+                                .then(markdown => {
+                                    const html = marked.parse(markdown);
+                                    content.innerHTML = `<h1 style="color: var(--green); margin-bottom: 1rem;">${filename.replace('.md', '')}</h1>${html}`;
+                                })
+                                .catch(() => {
+                                    content.innerHTML = `<p style="color: var(--red);">${translations[currentLang]['error']}</p>`;
+                                });
+                        });
+                    } else {
+                        // Navigate to folder
+                        currentPath = parts.filter(p => p);
+                        loadBlogContent();
+                    }
+                } else {
+                    currentPath = [];
+                    loadBlogContent();
+                }
+            }
+        }
+
+        function showSection(sectionName) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(sectionName).classList.add('active');
+            document.querySelector(`[data-page="${sectionName}"]`).classList.add('active');
+        }
     </script>
 </body>
-                        </html>
+    </html>
