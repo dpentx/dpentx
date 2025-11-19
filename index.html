@@ -558,6 +558,14 @@
                     btn.classList.add('active');
                 }
             });
+
+            // Reload projects if on projects page
+            const projectsSection = document.getElementById('projects');
+            if (projectsSection.classList.contains('active')) {
+                document.getElementById('projects-list').innerHTML = '';
+                document.getElementById('projects-loading').style.display = 'block';
+                loadProjects();
+            }
         }
 
         document.querySelectorAll('.lang-btn').forEach(btn => {
@@ -717,43 +725,58 @@
 
                 projectsLoading.style.display = 'none';
 
-                for (const repo of allRepos) {
-                    let description = repo.description;
+                // Process repos in batches to avoid overwhelming the browser
+                const batchSize = 3;
+                for (let i = 0; i < allRepos.length; i += batchSize) {
+                    const batch = allRepos.slice(i, i + batchSize);
                     
-                    // Try to fetch localized description from desc folder
-                    const descFile = currentLang === 'tr' ? 'tr.md' : 'en.md';
-                    const descUrl = `https://raw.githubusercontent.com/${repo.full_name}/main/desc/${descFile}`;
-                    
-                    try {
-                        const descResponse = await fetch(descUrl);
-                        if (descResponse.ok) {
-                            description = await descResponse.text();
-                            // Clean up markdown and trim whitespace
-                            description = description.replace(/[#*`\[\]]/g, '').trim();
+                    await Promise.all(batch.map(async (repo) => {
+                        let description = repo.description;
+                        
+                        // Try to fetch localized description from desc folder
+                        const descFile = currentLang === 'tr' ? 'tr.md' : 'en.md';
+                        const descUrl = `https://raw.githubusercontent.com/${repo.full_name}/main/desc/${descFile}`;
+                        
+                        try {
+                            const controller = new AbortController();
+                            const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+                            
+                            const descResponse = await fetch(descUrl, { 
+                                signal: controller.signal,
+                                cache: 'force-cache' // Use cache when available
+                            });
+                            clearTimeout(timeoutId);
+                            
+                            if (descResponse.ok) {
+                                description = await descResponse.text();
+                                // Clean up markdown and trim whitespace
+                                description = description.replace(/[#*`\[\]]/g, '').trim();
+                            }
+                        } catch (e) {
+                            // If desc file not found or timeout, use default GitHub description
                         }
-                    } catch (e) {
-                        // If desc file not found, use default GitHub description
-                    }
 
-                    if (!description) {
-                        description = translations[currentLang]['no-content'];
-                    }
+                        if (!description) {
+                            description = translations[currentLang]['no-content'];
+                        }
 
-                    const card = document.createElement('div');
-                    card.className = 'project-card';
-                    card.onclick = () => window.open(repo.html_url, '_blank');
-                    card.innerHTML = `
-                        <div class="project-title"><i class="fas fa-folder-open"></i> ${repo.name}</div>
-                        <div class="project-desc">${description}</div>
-                        <div class="project-meta">
-                            ${repo.language ? `<span><i class="fas fa-code"></i> ${repo.language}</span>` : ''}
-                            <span><i class="fas fa-star"></i> ${repo.stargazers_count}</span>
-                            <span><i class="fas fa-code-fork"></i> ${repo.forks_count}</span>
-                        </div>
-                    `;
-                    projectsList.appendChild(card);
+                        const card = document.createElement('div');
+                        card.className = 'project-card';
+                        card.onclick = () => window.open(repo.html_url, '_blank');
+                        card.innerHTML = `
+                            <div class="project-title"><i class="fas fa-folder-open"></i> ${repo.name}</div>
+                            <div class="project-desc">${description}</div>
+                            <div class="project-meta">
+                                ${repo.language ? `<span><i class="fas fa-code"></i> ${repo.language}</span>` : ''}
+                                <span><i class="fas fa-star"></i> ${repo.stargazers_count}</span>
+                                <span><i class="fas fa-code-fork"></i> ${repo.forks_count}</span>
+                            </div>
+                        `;
+                        projectsList.appendChild(card);
+                    }));
                 }
             } catch (error) {
+                console.error('Error loading projects:', error);
                 projectsLoading.innerHTML = `<p style="color: var(--red);">${translations[currentLang]['error']}</p>`;
             }
         }
@@ -766,4 +789,4 @@
         });
     </script>
 </body>
-                </html>
+    </html>
