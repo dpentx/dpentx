@@ -496,6 +496,7 @@
         let currentPath = [];
         let currentLang = localStorage.getItem('preferredLanguage') || 'tr';
         let isReadingBlog = false;
+        let blogIndex = null; // Cache for blog index
 
         const translations = {
             tr: {
@@ -631,6 +632,20 @@
             }
         }
 
+        async function loadBlogIndex() {
+            if (blogIndex) return blogIndex;
+            
+            try {
+                // Load blog index from jsDelivr CDN (no rate limits!)
+                const response = await fetch(`https://cdn.jsdelivr.net/gh/${githubUsername}/${repoName}@main/blog-index.json`);
+                blogIndex = await response.json();
+                return blogIndex;
+            } catch (error) {
+                console.error('Error loading blog index:', error);
+                return { tr: {}, en: {} };
+            }
+        }
+
         async function loadBlogContent() {
             const blogList = document.getElementById('blog-list');
             const blogLoading = document.getElementById('blog-loading');
@@ -639,11 +654,8 @@
             blogList.innerHTML = '';
             blogLoading.style.display = 'block';
 
-            // Use language-specific blog folder
             const langFolder = currentLang === 'tr' ? 'tr' : 'en';
-            const path = currentPath.length > 0 ? currentPath.join('/') : '';
-            const fullPath = path ? `blog/${langFolder}/${path}` : `blog/${langFolder}`;
-
+            
             breadcrumb.innerHTML = '<a onclick="navigateTo([])">blog</a>';
             currentPath.forEach((folder, index) => {
                 const subPath = currentPath.slice(0, index + 1);
@@ -651,33 +663,48 @@
             });
 
             try {
-                const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repoName}/contents/${fullPath}`);
-                const items = await response.json();
+                const index = await loadBlogIndex();
+                const langIndex = index[langFolder] || {};
 
                 blogLoading.style.display = 'none';
 
-                const folders = items.filter(item => item.type === 'dir');
-                const files = items.filter(item => item.type === 'file' && item.name.endsWith('.md'));
-
-                folders.forEach(folder => {
-                    const li = document.createElement('li');
-                    li.className = 'folder-item';
-                    li.innerHTML = `<i class="fas fa-folder"></i> ${folder.name}`;
-                    li.onclick = () => navigateToFolder(folder.name);
-                    blogList.appendChild(li);
-                });
-
-                files.forEach(file => {
-                    const li = document.createElement('li');
-                    li.className = 'file-item';
-                    li.innerHTML = `<i class="fas fa-file-alt"></i> ${file.name}`;
-                    // Use jsDelivr CDN for file content (no rate limits!)
-                    // Add cache buster for fresh content
-                    const timestamp = Math.floor(Date.now() / 1000 / 3600); // Changes every hour
-                    const cdnFileUrl = `https://cdn.jsdelivr.net/gh/${githubUsername}/${repoName}@main/${fullPath}/${file.name}?t=${timestamp}`;
-                    li.onclick = () => openMarkdownFile(cdnFileUrl, file.name);
-                    blogList.appendChild(li);
-                });
+                // If we're at root, show folders
+                if (currentPath.length === 0) {
+                    const folders = Object.keys(langIndex);
+                    
+                    if (folders.length === 0) {
+                        blogList.innerHTML = '<li style="padding: 1rem; color: var(--text-dim); text-align: center;">No blog posts yet</li>';
+                        return;
+                    }
+                    
+                    folders.forEach(folder => {
+                        const li = document.createElement('li');
+                        li.className = 'folder-item';
+                        li.innerHTML = `<i class="fas fa-folder"></i> ${folder}`;
+                        li.onclick = () => navigateToFolder(folder);
+                        blogList.appendChild(li);
+                    });
+                } else {
+                    // Show files in current folder
+                    const folderName = currentPath[0]; // Currently only supporting 1 level deep
+                    const files = langIndex[folderName] || [];
+                    
+                    if (files.length === 0) {
+                        blogList.innerHTML = '<li style="padding: 1rem; color: var(--text-dim); text-align: center;">No files in this folder</li>';
+                        return;
+                    }
+                    
+                    files.forEach(file => {
+                        const li = document.createElement('li');
+                        li.className = 'file-item';
+                        li.innerHTML = `<i class="fas fa-file-alt"></i> ${file}`;
+                        
+                        const timestamp = Math.floor(Date.now() / 1000 / 3600);
+                        const cdnFileUrl = `https://cdn.jsdelivr.net/gh/${githubUsername}/${repoName}@main/blog/${langFolder}/${folderName}/${file}?t=${timestamp}`;
+                        li.onclick = () => openMarkdownFile(cdnFileUrl, file);
+                        blogList.appendChild(li);
+                    });
+                }
 
                 document.getElementById("blog-count").textContent = await countAllMarkdownFiles();
             } catch (error) {
@@ -688,10 +715,16 @@
 
         async function countAllMarkdownFiles() {
             try {
-                const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repoName}/git/trees/main?recursive=1`);
-                const data = await response.json();
+                const index = await loadBlogIndex();
                 const langFolder = currentLang === 'tr' ? 'tr' : 'en';
-                return data.tree.filter(item => item.path.startsWith(`blog/${langFolder}/`) && item.path.endsWith('.md')).length;
+                const langIndex = index[langFolder] || {};
+                
+                let count = 0;
+                Object.values(langIndex).forEach(files => {
+                    count += files.length;
+                });
+                
+                return count;
             } catch {
                 return 0;
             }
@@ -762,6 +795,14 @@
                     fetch(`https://api.github.com/users/${githubUsername2}/repos?sort=updated&per_page=100`).then(r => r.json())
                 ]);
 
+                // Check for rate limit error
+                if (repos1.message || repos2.message) {
+                    projectsLoading.innerHTML = `<p style="color: var(--yellow);">${translations[currentLang]['loading']}... (Rate limit - will retry in a moment)</p>`;
+                    // Retry after 5 seconds
+                    setTimeout(loadProjects, 5000);
+                    return;
+                }
+
                 const allRepos = [...repos1, ...repos2]
                     .filter(repo => !repo.fork)
                     .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
@@ -769,7 +810,7 @@
 
                 projectsLoading.style.display = 'none';
 
-                // Process repos in batches to avoid overwhelming the browser
+                // Process repos in batches
                 const batchSize = 3;
                 for (let i = 0; i < allRepos.length; i += batchSize) {
                     const batch = allRepos.slice(i, i + batchSize);
@@ -796,7 +837,7 @@
                                 description = description.replace(/[#*`\[\]]/g, '').trim();
                             }
                         } catch (e) {
-                            // If desc file not found or timeout, use default GitHub description
+                            // Use default description
                         }
 
                         if (!description) {
@@ -898,4 +939,4 @@
         }
     </script>
 </body>
-                </html>
+                                                                                                                                  </html>
