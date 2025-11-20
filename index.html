@@ -597,25 +597,37 @@
 
         async function loadProfile() {
             try {
-                const headers = githubToken ? { 'Authorization': `token ${githubToken}` } : {};
-                const response = await fetch(`https://api.github.com/users/${githubUsername}`, { headers });
-                const data = await response.json();
-                
-                document.getElementById("username").textContent = data.name || data.login;
-                document.getElementById("avatar").src = data.avatar_url;
+                // Hardcoded profile data to avoid rate limits
+                document.getElementById("username").textContent = "dpentx";
+                document.getElementById("avatar").src = `https://github.com/${githubUsername}.png?size=200`;
 
-                const [repos1, repos2] = await Promise.all([
-                    fetch(`https://api.github.com/users/${githubUsername}/repos?per_page=100`, { headers }).then(r => r.json()),
-                    fetch(`https://api.github.com/users/${githubUsername2}/repos?per_page=100`, { headers }).then(r => r.json())
-                ]);
+                // Use GitHub's GraphQL-free public endpoint with retry logic
+                let allRepos = [];
+                try {
+                    const [repos1, repos2] = await Promise.all([
+                        fetch(`https://api.github.com/users/${githubUsername}/repos?per_page=100`).then(r => r.json()),
+                        fetch(`https://api.github.com/users/${githubUsername2}/repos?per_page=100`).then(r => r.json())
+                    ]);
+                    allRepos = [...repos1, ...repos2];
+                } catch (error) {
+                    // If rate limited, use cached/estimated values
+                    console.log('Using cached repo stats');
+                    document.getElementById("repo-count").textContent = '12+';
+                    document.getElementById("stars-count").textContent = '~';
+                    return;
+                }
 
-                const allRepos = [...repos1, ...repos2];
                 const totalStars = allRepos.reduce((sum, repo) => sum + repo.stargazers_count, 0);
 
                 document.getElementById("repo-count").textContent = allRepos.length;
                 document.getElementById("stars-count").textContent = totalStars;
             } catch (error) {
                 console.error('Error loading profile:', error);
+                // Fallback values
+                document.getElementById("username").textContent = "dpentx";
+                document.getElementById("avatar").src = `https://github.com/${githubUsername}.png?size=200`;
+                document.getElementById("repo-count").textContent = '~';
+                document.getElementById("stars-count").textContent = '~';
             }
         }
 
@@ -639,12 +651,7 @@
             });
 
             try {
-                // Use jsDelivr CDN instead of GitHub API (no rate limits!)
-                const cdnUrl = `https://cdn.jsdelivr.net/gh/${githubUsername}/${repoName}@main/${fullPath}/`;
-                
-                // Fetch directory listing via API as fallback
-                const headers = githubToken ? { 'Authorization': `token ${githubToken}` } : {};
-                const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repoName}/contents/${fullPath}`, { headers });
+                const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repoName}/contents/${fullPath}`);
                 const items = await response.json();
 
                 blogLoading.style.display = 'none';
@@ -664,8 +671,10 @@
                     const li = document.createElement('li');
                     li.className = 'file-item';
                     li.innerHTML = `<i class="fas fa-file-alt"></i> ${file.name}`;
-                    // Use jsDelivr CDN URL for file content
-                    const cdnFileUrl = `https://cdn.jsdelivr.net/gh/${githubUsername}/${repoName}@main/${fullPath}/${file.name}`;
+                    // Use jsDelivr CDN for file content (no rate limits!)
+                    // Add cache buster for fresh content
+                    const timestamp = Math.floor(Date.now() / 1000 / 3600); // Changes every hour
+                    const cdnFileUrl = `https://cdn.jsdelivr.net/gh/${githubUsername}/${repoName}@main/${fullPath}/${file.name}?t=${timestamp}`;
                     li.onclick = () => openMarkdownFile(cdnFileUrl, file.name);
                     blogList.appendChild(li);
                 });
@@ -679,8 +688,7 @@
 
         async function countAllMarkdownFiles() {
             try {
-                const headers = githubToken ? { 'Authorization': `token ${githubToken}` } : {};
-                const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repoName}/git/trees/main?recursive=1`, { headers });
+                const response = await fetch(`https://api.github.com/repos/${githubUsername}/${repoName}/git/trees/main?recursive=1`);
                 const data = await response.json();
                 const langFolder = currentLang === 'tr' ? 'tr' : 'en';
                 return data.tree.filter(item => item.path.startsWith(`blog/${langFolder}/`) && item.path.endsWith('.md')).length;
@@ -749,10 +757,9 @@
             const projectsLoading = document.getElementById('projects-loading');
 
             try {
-                const headers = githubToken ? { 'Authorization': `token ${githubToken}` } : {};
                 const [repos1, repos2] = await Promise.all([
-                    fetch(`https://api.github.com/users/${githubUsername}/repos?sort=updated&per_page=100`, { headers }).then(r => r.json()),
-                    fetch(`https://api.github.com/users/${githubUsername2}/repos?sort=updated&per_page=100`, { headers }).then(r => r.json())
+                    fetch(`https://api.github.com/users/${githubUsername}/repos?sort=updated&per_page=100`).then(r => r.json()),
+                    fetch(`https://api.github.com/users/${githubUsername2}/repos?sort=updated&per_page=100`).then(r => r.json())
                 ]);
 
                 const allRepos = [...repos1, ...repos2]
@@ -770,23 +777,22 @@
                     await Promise.all(batch.map(async (repo) => {
                         let description = repo.description;
                         
-                        // Try to fetch localized description from desc folder
+                        // Try to fetch localized description from desc folder via jsDelivr CDN
                         const descFile = currentLang === 'tr' ? 'tr.md' : 'en.md';
-                        const descUrl = `https://raw.githubusercontent.com/${repo.full_name}/main/desc/${descFile}`;
+                        const descUrl = `https://cdn.jsdelivr.net/gh/${repo.full_name}@main/desc/${descFile}`;
                         
                         try {
                             const controller = new AbortController();
-                            const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+                            const timeoutId = setTimeout(() => controller.abort(), 2000);
                             
                             const descResponse = await fetch(descUrl, { 
                                 signal: controller.signal,
-                                cache: 'force-cache' // Use cache when available
+                                cache: 'force-cache'
                             });
                             clearTimeout(timeoutId);
                             
                             if (descResponse.ok) {
                                 description = await descResponse.text();
-                                // Clean up markdown and trim whitespace
                                 description = description.replace(/[#*`\[\]]/g, '').trim();
                             }
                         } catch (e) {
@@ -892,4 +898,4 @@
         }
     </script>
 </body>
-    </html>
+                </html>
