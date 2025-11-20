@@ -889,18 +889,26 @@
                 const blogPath = hash.replace('blog/', '').replace('blog', '');
                 
                 if (blogPath) {
-                    const parts = blogPath.split('/');
+                    const parts = blogPath.split('/').filter(p => p);
+                    
+                    // Remove language prefix if present (tr/en)
+                    if (parts[0] === 'tr' || parts[0] === 'en') {
+                        parts.shift(); // Remove language from path
+                    }
+                    
                     const lastPart = parts[parts.length - 1];
                     
                     // Check if it's a markdown file
-                    if (lastPart.endsWith('.md')) {
+                    if (lastPart && lastPart.endsWith('.md')) {
                         // Open the blog post
                         currentPath = parts.slice(0, -1);
                         loadBlogContent().then(() => {
-                            // Find and open the file
                             const filename = lastPart;
-                            const fullPath = parts.join('/');
-                            const fileUrl = `https://raw.githubusercontent.com/${githubUsername}/${repoName}/main/blog/${fullPath}`;
+                            const langFolder = currentLang === 'tr' ? 'tr' : 'en';
+                            const folderPath = parts.slice(0, -1).join('/');
+                            const fullPath = folderPath ? `${langFolder}/${folderPath}/${filename}` : `${langFolder}/${filename}`;
+                            const timestamp = Math.floor(Date.now() / 1000 / 3600);
+                            const fileUrl = `https://cdn.jsdelivr.net/gh/${githubUsername}/${repoName}@main/blog/${fullPath}?t=${timestamp}`;
                             
                             const modal = document.getElementById('blog-modal');
                             const content = document.getElementById('modal-content');
@@ -920,7 +928,7 @@
                         });
                     } else {
                         // Navigate to folder
-                        currentPath = parts.filter(p => p);
+                        currentPath = parts;
                         loadBlogContent();
                     }
                 } else {
@@ -939,4 +947,4 @@
         }
     </script>
 </body>
-                                                                                                                                  </html>
+    </html>
