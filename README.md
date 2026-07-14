@@ -26,10 +26,13 @@ Projelerimin çoğu vibe coding ile oluştu, ama bunu dizginlemek için Python, 
 
 ---
 
-Hayatım bir şarkı olsaydı, muhtemelen şu olurdu:
+#### Hayatım bir şarkı olsaydı, muhtemelen şu olurdu:
 
 <a href="https://music.youtube.com/watch?v=EzeJVk0gDZ4">
   <img src="https://kehribar.vercel.app/api/card" alt="LOLUET — スプートニク"/>
 </a>
+
+---
+#### Şu an dinlediğim:
 
 <img src="https://kehribar.vercel.app/api/lastfm" alt="last.fm now playing"/>
