@@ -9,9 +9,9 @@ Buraya düzenli bakmıyorum ama repolarım ve [web sitem](https://kehribar.verce
 #### Şu sıralar üzerinde çalıştıklarım
 
 - 🖥️ **[qs-niri](https://github.com/dpentx/qs-niri)** — Quickshell + Niri tabanlı masaüstü ortamım (duvar kağıdı yönetimi, medya kontrolleri, panel bileşenleri)
-- 📚 **eptran** — epub'ları Türkçeye otomatik çeviren bir pipeline
-- 🌐 **kehribar-web** — kişisel sitemin Astro tabanlı, çok dilli, "config ledger" temalı yeniden yapımı
-- ❄️ Her şeyi NixOS + flakes ile declarative tutmaya çalışıyorum (`manix`)
+- 📚 **[eptran](https://github.com/dpentx/eptran)** — epub'ları Türkçeye otomatik çeviren bir pipeline
+- 🌐 **[kehribar-web](https://github.com/dpentx/kehribar-web)** — kişisel sitemin Astro tabanlı, çok dilli, "config ledger" temalı yeniden yapımı
+- ❄️ Her şeyi NixOS + flakes ile declarative tutmaya çalışıyorum (`[manix](https://github.com/dpentx/manix)`)
 
 ---
 
