@@ -11,7 +11,7 @@ Buraya düzenli bakmıyorum ama repolarım ve [web sitem](https://kehribar.verce
 - 🖥️ **[qs-niri](https://github.com/dpentx/qs-niri)** — Quickshell + Niri tabanlı masaüstü ortamım (duvar kağıdı yönetimi, medya kontrolleri, panel bileşenleri)
 - 📚 **[eptran](https://github.com/dpentx/eptran)** — epub'ları Türkçeye otomatik çeviren bir pipeline
 - 🌐 **[kehribar-web](https://github.com/dpentx/kehribar-web)** — kişisel sitemin Astro tabanlı, çok dilli, "config ledger" temalı yeniden yapımı
-- ❄️ Her şeyi NixOS + flakes ile declarative tutmaya çalışıyorum (`[manix](https://github.com/dpentx/manix)`)
+- ❄️ Her şeyi NixOS + flakes ile declarative tutmaya çalışıyorum ([manix](https://github.com/dpentx/manix))
 
 ---
 
